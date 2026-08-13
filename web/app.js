@@ -2,29 +2,72 @@
 (function () {
   'use strict';
 
-  const { buildDemoCity, shortestRoute, adRoadRoute, estimateReward, edgeAdScore } = window.ADRO;
+  const { buildDemoCity, buildCityFromData, shortestRoute, adRoadRoute, estimateReward, edgeAdScore } = window.ADRO;
 
-  const city = buildDemoCity();
-  const g = city.graph;
-
-  const state = {
-    start: 'n6_1',
-    goal: 'n1_9',
-    maxDetour: 0.3,
-    clickPhase: 0, // 0: 다음 클릭이 출발지, 1: 다음 클릭이 도착지
+  // ---- 지역 ----
+  const REGIONS = {
+    yongsan: () => {
+      const city = buildCityFromData(window.ADRO_DATA);
+      return { ...city, adLabels: true };
+    },
+    virtual: () => {
+      const city = buildDemoCity();
+      return { graph: city.graph, name: '가상 도심', attribution: [], adLabels: false };
+    },
   };
+
+  let city = null;
+  let g = null;
+
+  const state = { start: null, goal: null, maxDetour: 0.3, clickPhase: 0 };
 
   const canvas = document.getElementById('map');
   const ctx = canvas.getContext('2d');
+
+  // 그래프에서 가장 멀리 떨어진 두 노드를 기본 출발/도착으로 쓴다.
+  function defaultEndpoints() {
+    const nodes = [...g.nodes.values()];
+    let best = [nodes[0].id, nodes[nodes.length - 1].id, -1];
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+        if (d > best[2]) best = [nodes[i].id, nodes[j].id, d];
+      }
+    }
+    return best;
+  }
+
+  function setRegion(key) {
+    city = REGIONS[key]();
+    g = city.graph;
+    if (key === 'virtual') {
+      state.start = 'n6_1';
+      state.goal = 'n1_9';
+    } else if (city.defaults) {
+      state.start = city.defaults.start;
+      state.goal = city.defaults.goal;
+    } else {
+      const [s, t] = defaultEndpoints();
+      state.start = s;
+      state.goal = t;
+    }
+    state.clickPhase = 0;
+    document.getElementById('attrib').innerHTML =
+      city.attribution.map(a => `<div>${a}</div>`).join('');
+    computeView();
+    recompute();
+  }
 
   // ---- 좌표 변환 ----
   let view = { scale: 1, ox: 0, oy: 0 };
 
   function computeView() {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const n of g.nodes.values()) {
-      minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
-      minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+    for (const e of g.edges) {
+      for (const p of e.geometry) {
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+      }
     }
     const pad = 34;
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -36,16 +79,18 @@
     };
   }
 
-  const px = n => n.x * view.scale + view.ox;
-  const py = n => n.y * view.scale + view.oy;
+  const sx = x => x * view.scale + view.ox;
+  const sy = y => y * view.scale + view.oy;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    computeView();
-    render();
+    if (g) {
+      computeView();
+      render();
+    }
   }
 
   // ---- 경로 계산 ----
@@ -69,16 +114,23 @@
     storefront: '#f2a35c',
   };
 
-  function edgeEnds(e) {
-    return [g.nodes.get(e.a), g.nodes.get(e.b)];
+  function tracePolyline(geometry) {
+    ctx.beginPath();
+    geometry.forEach((p, i) => {
+      i === 0 ? ctx.moveTo(sx(p.x), sy(p.y)) : ctx.lineTo(sx(p.x), sy(p.y));
+    });
   }
 
   function strokeRoute(route, style) {
     if (!route) return;
     ctx.beginPath();
-    for (let i = 0; i < route.path.length; i++) {
-      const n = g.nodes.get(route.path[i]);
-      i === 0 ? ctx.moveTo(px(n), py(n)) : ctx.lineTo(px(n), py(n));
+    for (let i = 0; i < route.edges.length; i++) {
+      const e = route.edges[i];
+      const forward = e.a === route.path[i];
+      const geom = forward ? e.geometry : [...e.geometry].reverse();
+      geom.forEach((p, j) => {
+        i === 0 && j === 0 ? ctx.moveTo(sx(p.x), sy(p.y)) : ctx.lineTo(sx(p.x), sy(p.y));
+      });
     }
     Object.assign(ctx, style.props);
     ctx.setLineDash(style.dash || []);
@@ -88,7 +140,7 @@
 
   function drawPin(nodeId, color, label) {
     const n = g.nodes.get(nodeId);
-    const x = px(n), y = py(n);
+    const x = sx(n.x), y = sy(n.y);
     ctx.beginPath();
     ctx.arc(x, y, 11, 0, Math.PI * 2);
     ctx.fillStyle = color;
@@ -103,15 +155,34 @@
     ctx.fillText(label, x, y + 0.5);
   }
 
+  // 간선 위 t 지점의 좌표(월드)와 진행 방향
+  function pointAlongEdge(e, t) {
+    const target = t * e.length;
+    let acc = 0;
+    for (let i = 1; i < e.geometry.length; i++) {
+      const a = e.geometry[i - 1], b = e.geometry[i];
+      const seg = Math.hypot(b.x - a.x, b.y - a.y);
+      if (acc + seg >= target || i === e.geometry.length - 1) {
+        const u = Math.max(0, Math.min(1, (target - acc) / (seg || 1e-9)));
+        return {
+          x: a.x + (b.x - a.x) * u,
+          y: a.y + (b.y - a.y) * u,
+          dx: (b.x - a.x) / (seg || 1),
+          dy: (b.y - a.y) / (seg || 1),
+        };
+      }
+      acc += seg;
+    }
+    return { ...e.geometry[0], dx: 1, dy: 0 };
+  }
+
   function adMarkerPos(e, ad) {
-    const [a, b] = edgeEnds(e);
-    const x = a.x + (b.x - a.x) * ad.t;
-    const y = a.y + (b.y - a.y) * ad.t;
-    // 도로에서 살짝 비켜 세운다
-    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    const p = pointAlongEdge(e, ad.t);
     const off = 9 / view.scale;
-    return { x: (x + nx * ad.side * off) * view.scale + view.ox, y: (y + ny * ad.side * off) * view.scale + view.oy };
+    return {
+      x: sx(p.x + -p.dy * ad.side * off),
+      y: sy(p.y + p.dx * ad.side * off),
+    };
   }
 
   function drawAd(e, ad) {
@@ -134,6 +205,17 @@
     }
     ctx.fill();
     ctx.stroke();
+
+    if (city.adLabels && ad.type === 'digital' && ad.label) {
+      ctx.font = '600 10px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,.9)';
+      ctx.strokeText(ad.label, x + r + 4, y);
+      ctx.fillStyle = '#6b3410';
+      ctx.fillText(ad.label, x + r + 4, y);
+    }
   }
 
   function render() {
@@ -146,11 +228,8 @@
     for (const e of g.edges) {
       const s = edgeAdScore(e);
       if (s <= 0) continue;
-      const [a, b] = edgeEnds(e);
       const alpha = Math.min(0.42, 0.08 + (s / e.length) * 0.9);
-      ctx.beginPath();
-      ctx.moveTo(px(a), py(a));
-      ctx.lineTo(px(b), py(b));
+      tracePolyline(e.geometry);
       ctx.strokeStyle = `rgba(${COLORS.heat}, ${alpha})`;
       ctx.lineWidth = 13;
       ctx.stroke();
@@ -158,10 +237,7 @@
 
     // 도로
     for (const e of g.edges) {
-      const [a, b] = edgeEnds(e);
-      ctx.beginPath();
-      ctx.moveTo(px(a), py(a));
-      ctx.lineTo(px(b), py(b));
+      tracePolyline(e.geometry);
       ctx.strokeStyle = COLORS.street;
       ctx.lineWidth = 5;
       ctx.stroke();
@@ -214,7 +290,7 @@
     const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
     let bestId = null, bestD = 40; // px
     for (const n of g.nodes.values()) {
-      const d = Math.hypot(px(n) - mx, py(n) - my);
+      const d = Math.hypot(sx(n.x) - mx, sy(n.y) - my);
       if (d < bestD) { bestD = d; bestId = n.id; }
     }
     if (!bestId) return;
@@ -237,24 +313,25 @@
 
   $('shuffle').addEventListener('click', () => {
     const ids = [...g.nodes.keys()];
+    const far = (a, b) => {
+      const na = g.nodes.get(a), nb = g.nodes.get(b);
+      return Math.hypot(na.x - nb.x, na.y - nb.y);
+    };
     let s, t, tries = 0;
     do {
       s = ids[Math.floor(Math.random() * ids.length)];
       t = ids[Math.floor(Math.random() * ids.length)];
       tries++;
-    } while ((s === t || farApart(s, t) < 400) && tries < 50);
+    } while ((s === t || far(s, t) < 400 || !shortestRoute(g, s, t)) && tries < 80);
     state.start = s;
     state.goal = t;
     state.clickPhase = 0;
     recompute();
   });
 
-  function farApart(a, b) {
-    const na = g.nodes.get(a), nb = g.nodes.get(b);
-    return Math.hypot(na.x - nb.x, na.y - nb.y);
-  }
+  $('region').addEventListener('change', ev => setRegion(ev.target.value));
 
   window.addEventListener('resize', resize);
   resize();
-  recompute();
+  setRegion(document.getElementById('region').value);
 })();

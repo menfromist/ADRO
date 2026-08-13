@@ -5,6 +5,7 @@
   "license": "MIT",
   "type": "commonjs",
   "scripts": {
-    "test": "node --test test/adro.test.js"
+    "test": "node --test test/adro.test.js test/real-data.test.js",
+    "build:data": "node scripts/build-real-data.js"
   }
 }

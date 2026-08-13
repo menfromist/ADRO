@@ -25,15 +25,21 @@
 
     /**
      * @param {object} [opts]
-     * @param {number} [opts.length] 미지정 시 두 노드의 유클리드 거리
-     * @param {Array}  [opts.ads]    [{ id, type, value, t, side }] — t는 간선상의 위치(0~1)
+     * @param {number} [opts.length]   미지정 시 지오메트리 폴리라인 길이
+     * @param {Array}  [opts.ads]      [{ id, type, value, t, side }] — t는 간선상의 위치(0~1)
+     * @param {Array}  [opts.geometry] 도로 형상 [{x,y}...] — 미지정 시 두 노드를 잇는 직선
      */
     addEdge(a, b, opts = {}) {
       const na = this.nodes.get(a);
       const nb = this.nodes.get(b);
       if (!na || !nb) throw new Error(`unknown node: ${a} or ${b}`);
-      const length = opts.length ?? Math.hypot(na.x - nb.x, na.y - nb.y);
-      const edge = { id: this.edges.length, a, b, length, ads: opts.ads || [] };
+      const geometry = opts.geometry || [{ x: na.x, y: na.y }, { x: nb.x, y: nb.y }];
+      let polyLen = 0;
+      for (let i = 1; i < geometry.length; i++) {
+        polyLen += Math.hypot(geometry[i].x - geometry[i - 1].x, geometry[i].y - geometry[i - 1].y);
+      }
+      const length = opts.length ?? polyLen;
+      const edge = { id: this.edges.length, a, b, length, geometry, ads: opts.ads || [] };
       this.edges.push(edge);
       this.adj.get(a).push(edge);
       this.adj.get(b).push(edge);

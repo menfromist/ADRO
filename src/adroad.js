@@ -34,9 +34,18 @@
     return ads;
   }
 
+  // 같은 광고가 가시권 안의 여러 간선에 붙어 있을 수 있으므로,
+  // 경로의 노출 가치는 광고 id 기준으로 중복 제거해 계산한다.
+  function uniqueAdScore(route) {
+    let sum = 0;
+    for (const ad of collectAds(route)) sum += ad.value;
+    return sum;
+  }
+
   function shortestRoute(graph, start, goal) {
     const r = dijkstra(graph, start, goal);
     if (!r) return null;
+    r.adScore = uniqueAdScore(r);
     return { ...r, mode: 'shortest', baseLength: r.length, detourRatio: 0 };
   }
 
@@ -49,25 +58,28 @@
     const { maxDetourRatio = 0.3, sweepSteps = 28 } = opts;
     const base = dijkstra(graph, start, goal);
     if (!base) return null;
+    base.adScore = uniqueAdScore(base);
 
     const budget = base.length * (1 + maxDetourRatio);
     let best = base;
 
-    // β 상한: 모든 간선에서 비용이 length의 5% 이상 남도록 잡아
-    // 비용이 음수가 되는 일이 없게 한다. (β ≤ 0.95 / max(광고밀도))
-    let maxDensity = 0;
+    // β 상한: 광고 밀도가 가장 낮은 광고 간선까지 비용이 거의 0이 되는 수준.
+    // 비용 하한(길이의 5%) 클램프가 음수 비용을 막아주므로 β를 크게 잡아도 안전하다.
+    let betaMax = 0;
     for (const e of graph.edges) {
       const s = edgeAdScore(e);
-      if (s > 0) maxDensity = Math.max(maxDensity, s / e.length);
+      if (s > 0) betaMax = Math.max(betaMax, (0.95 * e.length) / s);
     }
 
-    if (maxDensity > 0) {
-      const betaMax = 0.95 / maxDensity;
+    if (betaMax > 0) {
       for (let i = 1; i <= sweepSteps; i++) {
-        const beta = (i / sweepSteps) * betaMax;
+        // 제곱 스케일로 작은 β 구간을 촘촘히 탐색한다
+        const f = i / sweepSteps;
+        const beta = betaMax * f * f;
         const costFn = e => Math.max(e.length * 0.05, e.length - beta * edgeAdScore(e));
         const r = dijkstra(graph, start, goal, costFn);
         if (!r || r.length > budget) continue;
+        r.adScore = uniqueAdScore(r);
         if (r.adScore > best.adScore ||
             (r.adScore === best.adScore && r.length < best.length)) {
           best = r;

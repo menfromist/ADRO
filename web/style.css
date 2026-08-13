@@ -79,7 +79,20 @@ main {
 .dot.billboard { background: var(--billboard); border-radius: 2px; }
 .dot.storefront { background: var(--storefront); }
 
+.attrib {
+  position: absolute; right: 12px; top: 12px;
+  max-width: 38%;
+  font-size: 10.5px; color: var(--muted); text-align: right; line-height: 1.5;
+  background: rgba(255, 255, 255, .8); border-radius: 8px; padding: 5px 9px;
+}
+
 .panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+select {
+  font: inherit; font-size: 13px;
+  padding: 7px 10px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
 
 .controls {
   background: var(--panel); border: 1px solid var(--line);

@@ -24,14 +24,20 @@
     <div class="legend">
       <span><i class="sw route-ad"></i>광고 로드</span>
       <span><i class="sw route-short"></i>최단 경로</span>
-      <span><i class="dot digital"></i>디지털 미디어폴</span>
-      <span><i class="dot billboard"></i>옥외 빌보드</span>
+      <span><i class="dot digital"></i>역 미디어보드·디지털</span>
+      <span><i class="dot billboard"></i>버스쉘터·빌보드</span>
       <span><i class="dot storefront"></i>상점 광고</span>
     </div>
+    <div class="attrib" id="attrib"></div>
   </section>
 
   <aside class="panel">
     <div class="controls">
+      <label for="region">지역</label>
+      <select id="region">
+        <option value="yongsan" selected>서울 용산 — 실제 데이터</option>
+        <option value="virtual">가상 도심 — 시뮬레이션</option>
+      </select>
       <label for="detour">허용 우회율 <output id="detourOut">30%</output></label>
       <input type="range" id="detour" min="0" max="60" step="5" value="30">
       <button id="shuffle">무작위 출발·도착</button>
@@ -74,6 +80,8 @@
 <script src="../src/adroad.js"></script>
 <script src="../src/rewards.js"></script>
 <script src="../src/demo-city.js"></script>
+<script src="../src/load-city.js"></script>
+<script src="data/yongsan.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
