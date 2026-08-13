@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADRO — 광고 로드</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="logo">AD</span>
+    <div>
+      <h1>ADRO <small>광고 로드</small></h1>
+      <p>빠른 길 대신, 걸을수록 쌓이는 길 — 광고 밀집 거리로 안내하고 이동에 보상하는 맞춤형 경로</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="map-wrap">
+    <canvas id="map"></canvas>
+    <div class="map-hint">지도를 클릭해 출발지 → 도착지를 지정하세요</div>
+    <div class="legend">
+      <span><i class="sw route-ad"></i>광고 로드</span>
+      <span><i class="sw route-short"></i>최단 경로</span>
+      <span><i class="dot digital"></i>디지털 미디어폴</span>
+      <span><i class="dot billboard"></i>옥외 빌보드</span>
+      <span><i class="dot storefront"></i>상점 광고</span>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="controls">
+      <label for="detour">허용 우회율 <output id="detourOut">30%</output></label>
+      <input type="range" id="detour" min="0" max="60" step="5" value="30">
+      <button id="shuffle">무작위 출발·도착</button>
+    </div>
+
+    <div class="card ad" id="cardAd">
+      <h2><i class="sw route-ad"></i>광고 로드</h2>
+      <div class="reward"><b id="adReward">–</b><span>P 예상 적립</span></div>
+      <dl>
+        <div><dt>거리</dt><dd id="adDist">–</dd></div>
+        <div><dt>도보</dt><dd id="adTime">–</dd></div>
+        <div><dt>걸음</dt><dd id="adSteps">–</dd></div>
+        <div><dt>광고 노출</dt><dd id="adAds">–</dd></div>
+      </dl>
+    </div>
+
+    <div class="card" id="cardShort">
+      <h2><i class="sw route-short"></i>최단 경로 <small>(기준)</small></h2>
+      <div class="reward"><b id="shReward">–</b><span>P 예상 적립</span></div>
+      <dl>
+        <div><dt>거리</dt><dd id="shDist">–</dd></div>
+        <div><dt>도보</dt><dd id="shTime">–</dd></div>
+        <div><dt>걸음</dt><dd id="shSteps">–</dd></div>
+        <div><dt>광고 노출</dt><dd id="shAds">–</dd></div>
+      </dl>
+    </div>
+
+    <p class="diff" id="diff">–</p>
+
+    <details>
+      <summary>어떻게 동작하나요?</summary>
+      <p>최단 경로 대비 <b>허용 우회율</b>을 넘지 않는 경로 중 광고 노출 가치가
+      최대인 길을 찾습니다. 사용자는 걸음 보상에 더해 경로상의 광고를 지날 때마다
+      광고별 포인트를 추가로 받고, 광고주는 실제 도보 노출(CPE) 기준으로 정산합니다.</p>
+    </details>
+  </aside>
+</main>
+
+<script src="../src/graph.js"></script>
+<script src="../src/adroad.js"></script>
+<script src="../src/rewards.js"></script>
+<script src="../src/demo-city.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

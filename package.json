@@ -1,0 +1,10 @@
+{
+  "name": "adro",
+  "version": "0.1.0",
+  "description": "ADRO — 광고 밀집 거리로 안내하고 이동에 보상하는 '광고 로드' 맞춤형 경로 엔진 & 데모",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test test/adro.test.js"
+  }
+}
