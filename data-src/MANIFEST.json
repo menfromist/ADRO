@@ -1,0 +1,42 @@
+{
+  "description": "실데이터 원본의 출처·버전 고정 매니페스트. scripts/verify-data.js 로 무결성을 검증한다.",
+  "retrievedAt": "2026-08-14",
+  "files": [
+    {
+      "file": "seoul-roads.pbf",
+      "sha256": "15cd2369ef00976241a7bd24acf4d0bf9289e1a8656bde4823523a942beb4b80",
+      "source": "https://github.com/anvaka/index-large-cities",
+      "ref": "gh-pages @ dc0a2bd51ad7ec6a913023748cb4ab3f2b6a088d",
+      "path": "data/3602297418.pbf (OSM area 서울, relation 2297418)",
+      "license": "ODbL 1.0 © OpenStreetMap contributors",
+      "upstream": "OpenStreetMap → Overpass API (city-roads 인덱서, 2020-11 스냅샷)"
+    },
+    {
+      "file": "roads-seoul.geojson",
+      "sha256": "d1c94fab1a545be844fba896964674257dcd58c5334eb2261c2c29f71fd9d825",
+      "source": "https://github.com/openlayers/openlayers",
+      "ref": "main",
+      "path": "examples/data/geojson/roads-seoul.geojson",
+      "license": "ODbL 1.0 © OpenStreetMap contributors",
+      "upstream": "OpenStreetMap → overpass-turbo (2015-09 스냅샷)"
+    },
+    {
+      "file": "seoul_bus_stations_utf8.csv",
+      "sha256": "3fed3105c2eb921df3a2371c872a2d74cefb685ba0a3ede5f7c458f3b4e69081",
+      "source": "https://github.com/Just-Kaggle/labs",
+      "ref": "master",
+      "path": "1_part/1_Gis_dataset/seoul_bus_stations.csv (CP949 → UTF-8 변환)",
+      "license": "공공데이터 (서울특별시)",
+      "upstream": "서울 열린데이터광장 '서울시 버스정류소 위치정보' (OA-15067)"
+    },
+    {
+      "file": "seoul_subway_stations_utf8.csv",
+      "sha256": "6bfdf3cd82c03c3697a4337bc5797abc45f72fc4a0a44e1c7c86f8223b71f85f",
+      "source": "https://github.com/Just-Kaggle/labs",
+      "ref": "master",
+      "path": "1_part/1_Gis_dataset/seoul_subway_stations.csv (CP949 → UTF-8 변환)",
+      "license": "공공데이터 (서울특별시)",
+      "upstream": "서울 열린데이터광장 지하철역 좌표"
+    }
+  ]
+}

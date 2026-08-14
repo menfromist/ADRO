@@ -105,22 +105,49 @@ test('데모 도시: 광고 밀집 거리가 실제로 존재한다', () => {
   assert.ok(dense.length >= 10, `밀집 간선 ${dense.length}개`);
 });
 
-test('리워드: 걸음 보상 + 광고 보상 합산, 상한 적용', () => {
+test('리워드: 걸음 코인 + 노출 코인 합산, 상한 적용', () => {
   const route = {
     length: 700, // 1,000걸음
     edges: [
-      { length: 700, ads: [{ id: 'a', value: 12 }, { id: 'b', value: 8 }] },
+      { length: 700, ads: [{ id: 'a', value: 12, type: 'digital' }, { id: 'b', value: 8, type: 'billboard' }] },
     ],
   };
   const r = estimateReward(route);
   assert.equal(r.steps, 1000);
-  assert.equal(r.basePoints, 50);
-  assert.equal(r.adPoints, 20);
+  assert.equal(r.baseCoins, 50);
+  assert.equal(r.adCoins, 20);
   assert.equal(r.adCount, 2);
-  assert.equal(r.totalPoints, 70);
+  assert.equal(r.digitalCount, 1);
+  assert.equal(r.totalCoins, 70);
   assert.equal(r.capped, false);
 
-  const capped = estimateReward(route, { dailyCapPoints: 60 });
-  assert.equal(capped.totalPoints, 60);
+  const capped = estimateReward(route, { dailyCapCoins: 60 });
+  assert.equal(capped.totalCoins, 60);
   assert.equal(capped.capped, true);
+});
+
+test('배지: 경로 성과로 진행도와 획득 여부를 계산한다', () => {
+  const { evaluateBadges, countRegionAds } = require('../src/badges.js');
+
+  const reward = {
+    steps: 9000, adCount: 12, digitalCount: 2, totalCoins: 500,
+  };
+  const badges = evaluateBadges({ reward, regionAdTotal: 100 });
+  const byId = Object.fromEntries(badges.map(b => [b.id, b]));
+
+  assert.equal(byId.media_hunter.earned, true);        // 12/10
+  assert.equal(byId.long_walker.earned, true);         // 9000/8000
+  assert.equal(byId.coin_rush.earned, true);           // 500/300
+  assert.equal(byId.digital_collector.earned, false);  // 2/3
+  assert.equal(byId.digital_collector.current, 2);
+  assert.equal(byId.area_explorer.earned, false);      // 12/30
+  assert.equal(byId.area_explorer.target, 30);
+
+  // 지역 매체 수는 광고 id 기준으로 중복 제거
+  const { Graph } = require('../src/graph.js');
+  const g = new Graph();
+  g.addNode('A', 0, 0).addNode('B', 100, 0).addNode('C', 200, 0);
+  g.addEdge('A', 'B', { ads: [{ id: 'x', value: 5 }, { id: 'y', value: 5 }] });
+  g.addEdge('B', 'C', { ads: [{ id: 'x', value: 5 }] }); // 가시권 중복 부착
+  assert.equal(countRegionAds(g), 2);
 });

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const { buildDemoCity, buildCityFromData, shortestRoute, adRoadRoute, estimateReward, edgeAdScore } = window.ADRO;
+  const { buildDemoCity, buildCityFromData, shortestRoute, adRoadRoute, estimateReward, edgeAdScore, evaluateBadges, countRegionAds } = window.ADRO;
 
   // ---- 지역 ----
   const REGIONS = {
@@ -264,27 +264,36 @@
 
   function fillCard(prefix, route) {
     const r = estimateReward(route);
-    $(prefix + 'Reward').textContent = fmt.format(r.totalPoints);
+    $(prefix + 'Reward').textContent = fmt.format(r.totalCoins);
     $(prefix + 'Dist').textContent = route.length >= 1000
       ? (route.length / 1000).toFixed(2) + 'km'
       : Math.round(route.length) + 'm';
     $(prefix + 'Time').textContent = Math.round(r.walkTimeMin) + '분';
     $(prefix + 'Steps').textContent = fmt.format(r.steps) + '걸음';
-    $(prefix + 'Ads').textContent = `${r.adCount}개 · ${fmt.format(r.adPoints)}P`;
+    $(prefix + 'Ads').textContent = `${r.adCount}개 · ${fmt.format(r.adCoins)}코인`;
     return r;
+  }
+
+  function renderBadges(reward) {
+    const list = evaluateBadges({ reward, regionAdTotal: countRegionAds(g) });
+    $('badges').innerHTML = list.map(b =>
+      `<span class="chip${b.earned ? ' earned' : ''}" title="${b.desc}">` +
+      `${b.name} ${b.earned ? '✓' : `${fmt.format(b.current)}/${fmt.format(b.target)}`}</span>`
+    ).join('');
   }
 
   function updatePanel() {
     if (!routes.short || !routes.ad) return;
     const ad = fillCard('ad', routes.ad);
     const sh = fillCard('sh', routes.short);
+    renderBadges(ad);
 
     const extraM = Math.round(routes.ad.length - routes.short.length);
     const extraMin = Math.max(0, Math.round(ad.walkTimeMin - sh.walkTimeMin));
-    const extraP = ad.totalPoints - sh.totalPoints;
+    const extraC = ad.totalCoins - sh.totalCoins;
     $('diff').innerHTML = extraM <= 0
       ? '최단 경로가 이미 광고 밀집 거리를 지나거나, 허용 우회율 안에 더 나은 길이 없어요.'
-      : `<b>${fmt.format(extraM)}m</b>(약 ${extraMin}분) 더 걷는 대신 <b>+${fmt.format(extraP)}P</b> 더 받고, ` +
+      : `<b>${fmt.format(extraM)}m</b>(약 ${extraMin}분) 더 걷는 대신 <b>+${fmt.format(extraC)}코인</b> 더 받고, ` +
         `광고 노출은 ${sh.adCount}개 → <b>${ad.adCount}개</b>로 늘어나요.`;
   }
 

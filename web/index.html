@@ -46,18 +46,19 @@
 
     <div class="card ad" id="cardAd">
       <h2><i class="sw route-ad"></i>광고 로드</h2>
-      <div class="reward"><b id="adReward">–</b><span>P 예상 적립</span></div>
+      <div class="reward"><i class="coin"></i><b id="adReward">–</b><span>코인 예상 적립</span></div>
       <dl>
         <div><dt>거리</dt><dd id="adDist">–</dd></div>
         <div><dt>도보</dt><dd id="adTime">–</dd></div>
         <div><dt>걸음</dt><dd id="adSteps">–</dd></div>
         <div><dt>광고 노출</dt><dd id="adAds">–</dd></div>
       </dl>
+      <div class="badges" id="badges"></div>
     </div>
 
     <div class="card" id="cardShort">
       <h2><i class="sw route-short"></i>최단 경로 <small>(기준)</small></h2>
-      <div class="reward"><b id="shReward">–</b><span>P 예상 적립</span></div>
+      <div class="reward"><i class="coin dim"></i><b id="shReward">–</b><span>코인 예상 적립</span></div>
       <dl>
         <div><dt>거리</dt><dd id="shDist">–</dd></div>
         <div><dt>도보</dt><dd id="shTime">–</dd></div>
@@ -72,7 +73,9 @@
       <summary>어떻게 동작하나요?</summary>
       <p>최단 경로 대비 <b>허용 우회율</b>을 넘지 않는 경로 중 광고 노출 가치가
       최대인 길을 찾습니다. 사용자는 걸음 보상에 더해 경로상의 광고를 지날 때마다
-      광고별 포인트를 추가로 받고, 광고주는 실제 도보 노출(CPE) 기준으로 정산합니다.</p>
+      광고별 코인을 추가로 받고, 성과에 따라 배지를 모읍니다.</p>
+      <p>코인·배지는 앱 내 가상 재화입니다. 광고주 정산(CPE) 계약이 연결되면
+      같은 적립 구조에서 단가만 실비로 교체됩니다.</p>
     </details>
   </aside>
 </main>
@@ -80,6 +83,7 @@
 <script src="../src/graph.js"></script>
 <script src="../src/adroad.js"></script>
 <script src="../src/rewards.js"></script>
+<script src="../src/badges.js"></script>
 <script src="../src/demo-city.js"></script>
 <script src="../src/load-city.js"></script>
 <script src="data/seongsu.js"></script>
