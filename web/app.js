@@ -6,15 +6,14 @@
 
   // ---- 지역 ----
   const REGIONS = {
-    yongsan: () => {
-      const city = buildCityFromData(window.ADRO_DATA);
-      return { ...city, adLabels: true };
-    },
     virtual: () => {
       const city = buildDemoCity();
       return { graph: city.graph, name: '가상 도심', attribution: [], adLabels: false };
     },
   };
+  for (const [key, data] of Object.entries(window.ADRO_REGIONS || {})) {
+    REGIONS[key] = () => ({ ...buildCityFromData(data), adLabels: true });
+  }
 
   let city = null;
   let g = null;
@@ -176,6 +175,8 @@
     return { ...e.geometry[0], dx: 1, dy: 0 };
   }
 
+  let drawnLabels = new Set();
+
   function adMarkerPos(e, ad) {
     const p = pointAlongEdge(e, ad.t);
     const off = 9 / view.scale;
@@ -206,7 +207,9 @@
     ctx.fill();
     ctx.stroke();
 
-    if (city.adLabels && ad.type === 'digital' && ad.label) {
+    // 같은 역·정류소 이름이 여러 지점에 걸쳐 있으면 라벨은 한 번만 그린다
+    if (city.adLabels && ad.type === 'digital' && ad.label && !drawnLabels.has(ad.label)) {
+      drawnLabels.add(ad.label);
       ctx.font = '600 10px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
@@ -248,6 +251,7 @@
     strokeRoute(routes.ad, { props: { strokeStyle: COLORS.ad, lineWidth: 6 } });
 
     // 광고 마커
+    drawnLabels = new Set();
     for (const e of g.edges) for (const ad of e.ads) drawAd(e, ad);
 
     drawPin(state.start, '#2f9e44', '출');
